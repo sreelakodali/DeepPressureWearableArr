@@ -201,7 +201,7 @@ void DeepPressureWearableArr::directActuatorControl(int n) {
     // read force data and write out data at lower frequency
     cycleCount = cycleCount + 1;
   //if ((cycleCount == WRITE_COUNT)) {
-    if ((cycleCount == 10)) {
+    if ((cycleCount == 5)) { // formerly was 10
       for (i=0; i < 2; ++i) data[i] = readDataFromSensor(I2C_ADDRArr[i]);
       // powerOn = (data >= 150);
       // if (powerOn) analogWrite(led_OUT, 255);

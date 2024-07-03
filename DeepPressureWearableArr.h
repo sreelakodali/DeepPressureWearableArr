@@ -82,7 +82,7 @@ class DeepPressureWearableArr {
 	bool serialON;
 	bool sdWriteON;
 	int WRITE_COUNT = 8;
-	int T_CYCLE = 15;
+	int T_CYCLE = 15; // minimum delay to ensure not sampling at too high a rate for sensors
 
 	// Array version for multiple actuators
 	Servo actuatorArr[N_ACT];
