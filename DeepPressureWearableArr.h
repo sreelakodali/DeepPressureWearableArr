@@ -5,6 +5,7 @@
 #define DeepPressureWearableArr_h
 
 # define N_ACT 2
+# define T_SAMPLING 150000
 
 #include "Arduino.h"
 // #else
@@ -16,6 +17,8 @@
 #include <Wire.h>
 #include <SD.h>
 #include <SPI.h>
+#include "IntervalTimerEx.h"
+
 
 
 // Notes: haven't added SD card stuff yet, single actuator
@@ -53,10 +56,16 @@ class DeepPressureWearableArr {
 	float  user_flex_MIN;
 	float  user_flex_MAX;
 	int position_CommandArr[N_ACT];
+    int  buttonCount; // button count. global!
+    volatile short forceData[N_ACT];
+	volatile bool writeOut;
+	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x10, 0x12};
+
+    void beginTimer();
 	void calibration();
-	
 	void runtime(void (*mapping)(int));
 	void directActuatorControl(int n);
+	short readDataFromSensor(short address);
 	void sweep_uS(int t_d, int n);
 
 	//void miniPilot_patternsSequence(int t_d);
@@ -71,6 +80,9 @@ class DeepPressureWearableArr {
 	void safety();
 	int sweep(int t_d, int n);
 	void blinkN(int n, int t_d);
+	bool risingEdgeButton();
+
+
 
 	private:
 	
@@ -86,12 +98,15 @@ class DeepPressureWearableArr {
 
 	// Array version for multiple actuators
 	Servo actuatorArr[N_ACT];
-	int position_MeasuredArr[N_ACT]; // this could be local
 	short zeroForceArr[N_ACT]; // should this be local?
+
+	IntervalTimerEx ForceSampleSerialWriteTimer;
+	//IntervalTimerEx t2;
+	
 
 	const  int position_INArr[4] = {21, 20, 22, 23};
 	const  int position_OUTArr[4] = {7, 6, 8, 9};
-	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x10, 0x12};
+	
 	const int  button_IN = 4;
 	const int  led_OUT = 5;	
 	
@@ -106,20 +121,19 @@ class DeepPressureWearableArr {
 	// Pushbutton & LED
 	int  buttonState; // button state
 	int  oldButtonState; // old button state
-	int  buttonCount; // button count. global!
 	
 
 	// methods
 	
 	void initializeSystem(bool c);
 	bool initializeSerial();
-	bool initializeSDCard();
+	void initializeSDCard();
 	bool initializeActuator();
 	bool initializeFlexSensor();
 	bool initializeIO();
-	bool risingEdgeButton();
+	static void ISR(void* obj);
 	void writeOutData(int l, unsigned long t, float f, int *c, int *m, short *d);
-	short readDataFromSensor(short address);
+	
 
 	void calibrationActuatorFeedback(int n);
 	void calibrationZeroForce();
