@@ -49,6 +49,17 @@ static void DeepPressureWearableArr::ISR(void* obj) {
     DeepPressureWearableArr* THIS = (DeepPressureWearableArr*)obj;
 
     for (int i=0; i < THIS->N_ACTUATORS; ++i) THIS->forceData[i] = THIS->readDataFromSensor(THIS->I2C_ADDRArr[i]);
+
+    // Serial.print(millis());
+    // Serial.print(",");
+    // Serial.print(analogRead(THIS->position_INArr[0]));
+    // Serial.print(",");
+    // Serial.println(THIS->forceData[0]);
+    // myTime = millis();
+    //data[n] = forceData[n];
+        // position_Measured = analogRead(THIS->position_INArr[n]);        
+        // if (position_Measured < minValue) minValue = position_Measured;    
+    // if (serialON) Serial.println((String(millis()) + "," + String(counter) + "," + String(position_Measured) + "," + THIS->forceData[n]));
     THIS->writeOut = true;
     //Serial.println(THIS->forceData[0]);
   }
@@ -225,44 +236,82 @@ void DeepPressureWearableArr::directActuatorControl(int n) {
 // t_d is time between actuator steps. n is which actuator
 int DeepPressureWearableArr::sweep(int t_d, int n) {
     unsigned long myTime;
-    short data;
+    short data[N_ACTUATORS];
     int position_Measured;
     int counter = user_position_MIN;
     int extending = 1;
     int minValue = 1000;
-    
-    
-    while (counter <= user_position_MAX) {
-      String dataString = "";
+    bool localWriteOut;
+    unsigned long startTime = millis();
+    String dataString;
 
-      actuatorArr[n].write(counter);
-      position_Measured = analogRead(position_INArr[n]);
+    while(1) {
       myTime = millis();
-      if (position_Measured < minValue) minValue = position_Measured;
-      data = readDataFromSensor(I2C_ADDRArr[n]);
 
-      if (serialON) {
-        // writeOutData(1, myTime, 0, counter, position_MeasuredArr[n], data);
-        dataString += (String(myTime) + "," + String(counter) + "," \
-        + String(position_Measured) + "," + data);
-        Serial.println(dataString);
+      // update counter
+      if (int(myTime - startTime) > t_d) {
+        actuatorArr[n].write(counter);
+        //Serial.println(counter);
+        counter = counter + 1;
+        startTime = millis();
       }
 
-      if (extending == 1) {
-        if (counter == (user_position_MAX)) {
-          counter = counter - 1;
-          extending = 0;
-        } else counter = counter + 1;
+
+      noInterrupts();
+      localWriteOut = writeOut;
+      // read force data and write out data. writeOut is activated by IntervalTimer, interrupt based
+    
+      if (localWriteOut) {
+        dataString = "";
+        data[n] = forceData[n];
+        position_Measured = analogRead(position_INArr[n]);        
+        if (position_Measured < minValue) minValue = position_Measured;
+        dataString += (String(myTime) + "," + String(counter) + "," + String(position_Measured) + "," + data[n]);
+        if (serialON) Serial.println(dataString);
+        //writeOutData(N_ACTUATORS, myTime, flexSensor, position_CommandArr, position_MeasuredArr, data);
+        writeOut = false;
       }
-      else if (extending == 0) {
-        if (counter == user_position_MIN) {
-          counter = counter + 1;
-          extending = 1;
-          break; // comment if I want infinite sweeping
-        } else counter = counter - 1;
-      }
-      delay(t_d);
+      interrupts(); 
+
+      if (counter > 140) break;
+
     }
+    
+    
+    // while (counter <= user_position_MAX) {
+    //   String dataString = "";
+
+    //   actuatorArr[n].write(counter);
+    //   Serial.println(counter);
+      // position_Measured = analogRead(position_INArr[n]);
+      // myTime = millis();
+      // if (position_Measured < minValue) minValue = position_Measured;
+      //data[n] = readDataFromSensor(I2C_ADDRArr[n]);
+
+      // if (serialON) {
+      //   // writeOutData(1, myTime, 0, counter, position_MeasuredArr[n], data);
+      //   dataString += (String(myTime) + "," + String(counter) + "," \
+      //   + String(position_Measured) + "," + data);
+      //   Serial.println(dataString);
+      // }
+
+
+
+    //   if (extending == 1) {
+    //     if (counter == (user_position_MAX)) {
+    //       counter = counter - 1;
+    //       extending = 0;
+    //     } else counter = counter + 1;
+    //   }
+    //   else if (extending == 0) {
+    //     if (counter == user_position_MIN) {
+    //       counter = counter + 1;
+    //       extending = 1;
+    //       break; // comment if I want infinite sweeping
+    //     } else counter = counter - 1;
+    //   }
+    //   delay(t_d);
+    // }
     return minValue;    
 }
 
@@ -429,12 +478,10 @@ void DeepPressureWearableArr::sweep_uS(int t_d, int n) {
         position_Measured = analogRead(position_INArr[n]);
         myTime = millis();
         data = readDataFromSensor(I2C_ADDRArr[n]);
-
+        
         if (serialON) {
-          //writeOutData(1, myTime, 0, counter, position_MeasuredArr[n], data[n]);
-          dataString += (String(myTime) + "," + String(counter) + "," \
-        + String(position_Measured) + "," + String(data));
-        Serial.println(dataString);
+          dataString += (String(myTime) + "," + String(counter) + "," + String(position_Measured) + "," + String(data));        
+            Serial.println(dataString);
         }
         counter = counter + 1;
         delay(t_d);
