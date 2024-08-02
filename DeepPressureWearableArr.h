@@ -4,7 +4,7 @@
 #ifndef DeepPressureWearableArr_h
 #define DeepPressureWearableArr_h
 
-# define N_ACT 2
+# define N_ACT 4
 # define T_SAMPLING 150000
 
 #include "Arduino.h"
@@ -28,9 +28,10 @@ typedef enum {
 	FLEX_MAX = 180
 } FLEX_SENSOR_LIMITS;
 
+// For new MightyZap actuator 
 typedef enum {
-	POSITION_MIN = 47,
-	POSITION_MAX = 139
+	POSITION_MIN = 47, // 900us mightyZap
+	POSITION_MAX = 139 // 2100us mightyZap
 } ACTUATOR_LIMITS;
 
 // Calibration states
@@ -59,7 +60,8 @@ class DeepPressureWearableArr {
     int  buttonCount; // button count. global!
     volatile short forceData[N_ACT];
 	volatile bool writeOut;
-	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x10, 0x12};
+
+
 
     void beginTimer();
 	void calibration();
@@ -93,6 +95,8 @@ class DeepPressureWearableArr {
 	INPUT_TYPE inputType;
 	bool serialON;
 	bool sdWriteON;
+	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x0A, 0x0C};
+	const bool actuatorType = 0; // NEW. 0 = actuonix and 1 = MightyZap
 	int WRITE_COUNT = 8;
 	int T_CYCLE = 15; // minimum delay to ensure not sampling at too high a rate for sensors
 
