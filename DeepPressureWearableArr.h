@@ -28,7 +28,7 @@ typedef enum {
 	FLEX_MAX = 180
 } FLEX_SENSOR_LIMITS;
 
-// For new MightyZap actuator 
+// CHANGE THIS for new MightyZap actuator!
 typedef enum {
 	POSITION_MIN = 47, // 900us mightyZap
 	POSITION_MAX = 139 // 2100us mightyZap
@@ -96,7 +96,7 @@ class DeepPressureWearableArr {
 	bool serialON;
 	bool sdWriteON;
 	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x0A, 0x0C};
-	const bool actuatorType = 0; // NEW. 0 = actuonix and 1 = MightyZap
+	const bool actuatorType = 0; // NEW. 0 = actuonix and 1 = MightyZap. CHANGE THIS for new actuator!
 	int WRITE_COUNT = 8;
 	int T_CYCLE = 15; // minimum delay to ensure not sampling at too high a rate for sensors
 

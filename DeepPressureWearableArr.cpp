@@ -265,10 +265,11 @@ void DeepPressureWearableArr::directActuatorControl(int n) {
 // t_d is time between actuator steps. n is which actuator
 int DeepPressureWearableArr::sweep(int t_d, int n) {
     unsigned long myTime;
-    short data[N_ACTUATORS];
+    short data;
+    bool retracting = false;
     int position_Measured;
     int counter = user_position_MIN-1;
-    int extending = 1;
+    int inc = 1;
     int minValue = 1000;
     bool localWriteOut;
     unsigned long startTime = millis();
@@ -279,7 +280,11 @@ int DeepPressureWearableArr::sweep(int t_d, int n) {
 
       // update counter
       if (int(myTime - startTime) > t_d) {
-        counter = counter + 1;
+        counter = counter + inc;
+        
+        //bound the command
+        if(counter > user_position_MAX) counter = user_position_MAX;
+        else if(counter < user_position_MIN) counter = user_position_MIN;
 
         if (actuatorType) actuatorArr[n].writeMicroseconds(counter);
         else actuatorArr[n].write(counter);
@@ -294,18 +299,21 @@ int DeepPressureWearableArr::sweep(int t_d, int n) {
     
       if (localWriteOut) {
         dataString = "";
-        data[n] = forceData[n];
-        data[3] = forceData[3];
+        data = forceData[n];
         position_Measured = analogRead(position_INArr[n]);        
         if (position_Measured < minValue) minValue = position_Measured;
-        dataString += (String(myTime) + "," + String(counter) + "," + String(position_Measured) + "," + data[n]+ "," + data[3]);
+        dataString += (String(myTime) + "," + String(counter) + "," + String(position_Measured) + "," + data);
         if (serialON) Serial.println(dataString);
         //writeOutData(N_ACTUATORS, myTime, flexSensor, position_CommandArr, position_MeasuredArr, data);
         writeOut = false;
       }
       interrupts(); 
 
-      if (counter > user_position_MAX) break;
+      if (counter >= user_position_MAX) {
+        inc = -1 * inc;
+        retracting = true;
+      }
+      else if (counter <= (user_position_MIN) && retracting) break;
 
     }
     
@@ -956,7 +964,7 @@ void DeepPressureWearableArr::writeOutData(int l, unsigned long t, float f, int 
 }
 
 short DeepPressureWearableArr::readDataFromSensor(short address) {
-  byte i2cPacketLength = 6;//i2c packet length. Just need 6 bytes from each slave
+  byte i2cPacketLength = 6;//i2c packet length. Just need 6 bytes from each peripheral
   byte outgoingI2CBuffer[3];//outgoing array buffer
   byte incomingI2CBuffer[6];//incoming array buffer
   bool debug;
@@ -964,21 +972,21 @@ short DeepPressureWearableArr::readDataFromSensor(short address) {
   debug = false;
 
   outgoingI2CBuffer[0] = 0x01;//I2c read command
-  outgoingI2CBuffer[1] = 128;//Slave data offset
+  outgoingI2CBuffer[1] = 128;//peripheral data offset
   outgoingI2CBuffer[2] = i2cPacketLength;//require 6 bytes
 
   if (debug) Serial.println("Transmit address");  
   Wire.beginTransmission(address); // transmit to device 
   Wire.write(outgoingI2CBuffer, 3);// send out command
   if (debug) Serial.println("Check sensor status");
-  byte error = Wire.endTransmission(); // stop transmitting and check slave status
+  byte error = Wire.endTransmission(); // stop transmitting and check peripheral status
   if (debug) Serial.println("bloop");
-  if (error != 0) return -1; //if slave not exists or has error, return -1
-  Wire.requestFrom((uint8_t)address, i2cPacketLength);//require 6 bytes from slave
+  if (error != 0) return -1; //if peripheral not exists or has error, return -1
+  Wire.requestFrom((uint8_t)address, i2cPacketLength);//require 6 bytes from peripheral
   if (debug) Serial.println("Request bytes from sensor");
   
   byte incomeCount = 0;
-  while (incomeCount < i2cPacketLength)    // slave may send less than requested
+  while (incomeCount < i2cPacketLength)    // peripheral may send less than requested
   {
     if (Wire.available())
     {
