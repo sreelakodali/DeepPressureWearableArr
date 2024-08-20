@@ -4,7 +4,7 @@
 #ifndef DeepPressureWearableArr_h
 #define DeepPressureWearableArr_h
 
-# define N_ACT 4
+# define N_ACT 1
 # define T_SAMPLING 150000
 
 #include "Arduino.h"
@@ -13,11 +13,14 @@
 // #endif
 
 #include "SparkFun_Displacement_Sensor_Arduino_Library.h"
+#include <MightyZap.h>
 #include <Servo.h>
 #include <Wire.h>
 #include <SD.h>
 #include <SPI.h>
 #include "IntervalTimerEx.h"
+#include "skFilter.h"
+#include "skFilter_terminate.h"
 
 
 
@@ -28,11 +31,18 @@ typedef enum {
 	FLEX_MAX = 180
 } FLEX_SENSOR_LIMITS;
 
-// CHANGE THIS for new MightyZap actuator!
+// // actuonix command limits
+// typedef enum {
+// 	POSITION_MIN = 47, // 900us mightyZap
+// 	POSITION_MAX = 139 // 2100us mightyZap
+// } ACTUATOR_LIMITS;
+
+// MightyZap actuator limits
 typedef enum {
-	POSITION_MIN = 47, // 900us mightyZap
-	POSITION_MAX = 139 // 2100us mightyZap
+	POSITION_MIN = 0, 
+	POSITION_MAX = 4095
 } ACTUATOR_LIMITS;
+
 
 // Calibration states
 typedef enum { NONE, ZERO_FORCE, FLEX, MAX_PRESSURE, ACTUATOR  
@@ -61,8 +71,6 @@ class DeepPressureWearableArr {
     volatile short forceData[N_ACT];
 	volatile bool writeOut;
 
-
-
     void beginTimer();
 	void calibration();
 	void runtime(void (*mapping)(int));
@@ -84,6 +92,8 @@ class DeepPressureWearableArr {
 	void blinkN(int n, int t_d);
 	bool risingEdgeButton();
 
+	void writeActuator(int idx, int pos);
+
 
 
 	private:
@@ -96,23 +106,26 @@ class DeepPressureWearableArr {
 	bool serialON;
 	bool sdWriteON;
 	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x0A, 0x0C};
+
+	// FIX: don't forget to change these
 	const bool actuatorType = 0; // NEW. 0 = actuonix and 1 = MightyZap. CHANGE THIS for new actuator!
+	const int mightyZapWen_OUT = 2; // FIX THIS: temporary write enable output signal for buffer
+	Servo actuatorArr[N_ACT]; // Array version for multiple actuators
+	MightyZap* m_zap;
+	
 	int WRITE_COUNT = 8;
 	int T_CYCLE = 15; // minimum delay to ensure not sampling at too high a rate for sensors
-
-	// Array version for multiple actuators
-	Servo actuatorArr[N_ACT];
 	short zeroForceArr[N_ACT]; // should this be local?
 
 	IntervalTimerEx ForceSampleSerialWriteTimer;
 	//IntervalTimerEx t2;
 	
 
-	const  int position_INArr[4] = {21, 20, 22, 23};
-	const  int position_OUTArr[4] = {7, 6, 8, 9};
-	
+	const  int position_INArr[4] = {21, 20, 22, 23}; // analog adc pins
+	const  int position_OUTArr[4] = {7, 6, 8, 9}; // pwm output
 	const int  button_IN = 4;
-	const int  led_OUT = 5;	
+	const int  led_OUT = 5;
+	
 	
 	int  cycleCount; // cycleCount
 	bool  powerOn; // powerOn
