@@ -5,7 +5,7 @@
 #define DeepPressureWearableArr_h
 
 # define N_ACT 1
-# define T_SAMPLING 150000
+# define T_SAMPLING 500000
 
 #include "Arduino.h"
 // #else
@@ -68,7 +68,9 @@ class DeepPressureWearableArr {
 	float  user_flex_MAX;
 	int position_CommandArr[N_ACT];
     int  buttonCount; // button count. global!
+    const  int position_INArr[4] = {21, 20, 22, 23}; // analog adc pins
     volatile short forceData[N_ACT];
+    volatile int position_MeasuredArr[N_ACT];
 	volatile bool writeOut;
 
     void beginTimer();
@@ -93,7 +95,7 @@ class DeepPressureWearableArr {
 	bool risingEdgeButton();
 
 	void writeActuator(int idx, int pos);
-
+	int readFeedback(int idx);
 
 
 	private:
@@ -108,8 +110,8 @@ class DeepPressureWearableArr {
 	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x0A, 0x0C};
 
 	// FIX: don't forget to change these
-	const bool actuatorType = 0; // NEW. 0 = actuonix and 1 = MightyZap. CHANGE THIS for new actuator!
-	const int mightyZapWen_OUT = 2; // FIX THIS: temporary write enable output signal for buffer
+	const bool actuatorType = 1; // NEW. 0 = actuonix and 1 = MightyZap. CHANGE THIS for new actuator!
+	const int mightyZapWen_OUT = 12; // FIX THIS: temporary write enable output signal for buffer
 	Servo actuatorArr[N_ACT]; // Array version for multiple actuators
 	MightyZap* m_zap;
 	
@@ -121,7 +123,7 @@ class DeepPressureWearableArr {
 	//IntervalTimerEx t2;
 	
 
-	const  int position_INArr[4] = {21, 20, 22, 23}; // analog adc pins
+	
 	const  int position_OUTArr[4] = {7, 6, 8, 9}; // pwm output
 	const int  button_IN = 4;
 	const int  led_OUT = 5;
