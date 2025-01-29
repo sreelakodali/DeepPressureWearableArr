@@ -21,7 +21,8 @@
 
 #include <Servo.h>
 #include <Wire.h>
-#include "IntervalTimerEx.h"
+#include "LSM6DS3.h"
+//#include "IntervalTimerEx.h"
 
 // Notes: haven't added SD card stuff yet, single actuator
 
@@ -74,13 +75,13 @@ class DeepPressureWearableArr {
 
 	//MightyZap* m_zap;
 
-    void beginTimer();
+    // void beginTimer();
 	void calibration();
 	void runtime(void (*mapping)(int));
 	void directActuatorControl(int n);
 	short readDataFromSensor(short address);
+	
 	void sweep_uS(int t_d, int n);
-
 	//void miniPilot_patternsSequence(int t_d);
 	void miniPilot_patternsCommand();
 	void miniPilot_patternsCommandbyLetter();
@@ -120,7 +121,7 @@ class DeepPressureWearableArr {
 	int T_CYCLE = 15; // minimum delay to ensure not sampling at too high a rate for sensors
 	short zeroForceArr[N_ACT]; // should this be local?
 
-	IntervalTimerEx ForceSampleSerialWriteTimer;
+	//IntervalTimerEx ForceSampleSerialWriteTimer;
 	//IntervalTimerEx t2;
 	
 	const  int position_OUTArr[4] = {7, 6, 8, 9}; // pwm output
@@ -149,7 +150,7 @@ class DeepPressureWearableArr {
 	bool initializeActuator();
 	bool initializeFlexSensor();
 	bool initializeIO();
-	static void ISR(void* obj);
+	// static void ISR(void* obj);
 	void writeOutData(int l, unsigned long t, float f, int *c, int *m, short *d);
 	
 

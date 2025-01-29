@@ -52,33 +52,33 @@ DeepPressureWearableArr::DeepPressureWearableArr(INPUT_TYPE input, bool serial, 
 	initializeSystem(c);
 }
 
-static void DeepPressureWearableArr::ISR(void* obj) {
-    DeepPressureWearableArr* THIS = (DeepPressureWearableArr*)obj;
+// static void DeepPressureWearableArr::ISR(void* obj) {
+//     DeepPressureWearableArr* THIS = (DeepPressureWearableArr*)obj;
 
-    for (int i=0; i < THIS->N_ACTUATORS; ++i) {
-      THIS->forceData[i] = THIS->readDataFromSensor(THIS->I2C_ADDRArr[i]);
-      //THIS->position_MeasuredArrGlobal[i] = THIS->readFeedback(i);
-      //Serial.println(THIS->position_MeasuredArrGlobal[i]);
-    }
-    // Serial.println();
-    // Serial.print(millis());
-    // Serial.print(",");
-    // Serial.print(analogRead(THIS->position_INArr[0]));
-    // Serial.print(",");
-    // Serial.println(THIS->forceData[0]);
-    // myTime = millis();
-    //data[n] = forceData[n];
-        // position_Measured = analogRead(THIS->position_INArr[n]);        
-        // if (position_Measured < minValue) minValue = position_Measured;    
-    // if (serialON) Serial.println((String(millis()) + "," + String(counter) + "," + String(position_Measured) + "," + THIS->forceData[n]));
-    THIS->writeOut = true;
-    //Serial.println(THIS->forceData[0]);
-  }
+//     for (int i=0; i < THIS->N_ACTUATORS; ++i) {
+//       THIS->forceData[i] = THIS->readDataFromSensor(THIS->I2C_ADDRArr[i]);
+//       //THIS->position_MeasuredArrGlobal[i] = THIS->readFeedback(i);
+//       //Serial.println(THIS->position_MeasuredArrGlobal[i]);
+//     }
+//     // Serial.println();
+//     // Serial.print(millis());
+//     // Serial.print(",");
+//     // Serial.print(analogRead(THIS->position_INArr[0]));
+//     // Serial.print(",");
+//     // Serial.println(THIS->forceData[0]);
+//     // myTime = millis();
+//     //data[n] = forceData[n];
+//         // position_Measured = analogRead(THIS->position_INArr[n]);        
+//         // if (position_Measured < minValue) minValue = position_Measured;    
+//     // if (serialON) Serial.println((String(millis()) + "," + String(counter) + "," + String(position_Measured) + "," + THIS->forceData[n]));
+//     THIS->writeOut = true;
+//     //Serial.println(THIS->forceData[0]);
+//   }
 
 
-void DeepPressureWearableArr::beginTimer() {
-    //ForceSampleSerialWriteTimer.begin(ISR, this, T_SAMPLING);
-}
+// void DeepPressureWearableArr::beginTimer() {
+//     //ForceSampleSerialWriteTimer.begin(ISR, this, T_SAMPLING);
+// }
 
 
 // Public methods
@@ -183,18 +183,19 @@ void DeepPressureWearableArr::runtime(void (*mapping)(int)) {
       //actuator1.write(POSITION_MIN);
     }
 
-    for (i=0; i < N_ACTUATORS; ++i) position_MeasuredArr[i] = readFeedback(i);//analogRead(position_INArr[i]); // could put this in the interrupt too
-
-    noInterrupts();
-    localWriteOut = writeOut;
+    // noInterrupts();
+    // localWriteOut = writeOut;
     // read force data and write out data at lower frequency. writeOut is activated by IntervalTimer, interrupt based
-    
-    if (localWriteOut) {
-      for (i=0; i < N_ACTUATORS; ++i) data[i] = forceData[i];
+    cycleCount = cycleCount + 1;
+    //if ((cycleCount == WRITE_COUNT)) {
+    if (cycleCount) {
+      for (i=0; i < N_ACTUATORS; ++i) data[i] = readDataFromSensor(I2C_ADDRArr[i]);
+      for (i=0; i < N_ACTUATORS; ++i) position_MeasuredArr[i] = readFeedback(i);//analogRead(position_INArr[i]); // could put this in the interrupt too
       writeOutData(N_ACTUATORS, myTime, flexSensor, position_CommandArr, position_MeasuredArr, data);
-      writeOut = false;
+    cycleCount = 0;
+      //writeOut = false;
     }
-    interrupts(); 
+    // interrupts(); 
 
     risingEdgeButton();
     if (T_CYCLE > 0) delay(T_CYCLE);    
@@ -204,7 +205,7 @@ void DeepPressureWearableArr::runtime(void (*mapping)(int)) {
 
 void DeepPressureWearableArr::directActuatorControl(int n) {
     short data[N_ACTUATORS];
-    int position_Measured[N_ACTUATORS];
+    int position_MeasuredArr[N_ACTUATORS];
     unsigned long myTime;
     unsigned long test;
     unsigned long test2;
@@ -248,29 +249,20 @@ void DeepPressureWearableArr::directActuatorControl(int n) {
 
     // read force data and write out data at lower frequency
 
-    noInterrupts();
-    localWriteOut = writeOut;
+        // noInterrupts();
+    // localWriteOut = writeOut;
     // read force data and write out data at lower frequency. writeOut is activated by IntervalTimer, interrupt based
-    
-    if (localWriteOut) {
-      for (i=0; i < N_ACTUATORS; ++i) data[i] = forceData[i];
-      writeOutData(N_ACTUATORS, myTime, flexSensor, position_CommandArr, position_Measured, data);
-      writeOut = false;
+    cycleCount = cycleCount + 1;
+   //if ((cycleCount == WRITE_COUNT)) {
+    if (cycleCount) {
+      for (i=0; i < N_ACTUATORS; ++i) data[i] = readDataFromSensor(I2C_ADDRArr[i]);;
+      for (i=0; i < N_ACTUATORS; ++i) position_MeasuredArr[i] = readFeedback(i);//analogRead(position_INArr[i]); // could put this in the interrupt too
+      writeOutData(N_ACTUATORS, myTime, flexSensor, position_CommandArr, position_MeasuredArr, data);
+    cycleCount = 0;
+      //writeOut = false;
     }
-    interrupts(); 
-
-  //   cycleCount = cycleCount + 1;
-  // //if ((cycleCount == WRITE_COUNT)) {
-  //   if ((cycleCount == 1)) { // formerly was 10
-  //     for (i=0; i < 2; ++i) data[i] = readDataFromSensor(I2C_ADDRArr[i]);
-  //     // powerOn = (data >= 150);
-  //     // if (powerOn) analogWrite(led_OUT, 255);
-  //     // else analogWrite(led_OUT, 30);
-
-  //     writeOutData(2, myTime, flexSensor, position_CommandArr, position_MeasuredArr, data);
-  //     cycleCount = 0;
-  //   }
-    //risingEdgeButton();
+    // interrupts();  
+    risingEdgeButton();
     if (T_CYCLE > 0) delay(T_CYCLE);    
 }
 
@@ -306,21 +298,23 @@ int DeepPressureWearableArr::sweep(int t_d, int n) {
       }
 
 
-      noInterrupts();
-      localWriteOut = writeOut;
-      // read force data and write out data. writeOut is activated by IntervalTimer, interrupt based
-    
-      if (localWriteOut) {
+      // noInterrupts();
+      // localWriteOut = writeOut;
+      // // read force data and write out data. writeOut is activated by IntervalTimer, interrupt based
+      cycleCount = cycleCount + 1;
+      //if ((cycleCount == WRITE_COUNT)) {
+      if (cycleCount) {
         dataString = "";
-        data = forceData[n];
-        position_Measured = position_MeasuredArrGlobal[n];
+        data = readDataFromSensor(I2C_ADDRArr[n]);;
+        position_Measured = readFeedback(n);
         if (position_Measured < minValue) minValue = position_Measured;
         dataString += (String(myTime) + "," + String(counter) + "," + String(position_Measured) + "," + data);
         if (serialON) Serial.println(dataString);
         //writeOutData(N_ACTUATORS, myTime, flexSensor, position_CommandArr, position_MeasuredArr, data);
-        writeOut = false;
+        //writeOut = false;
+        cycleCount = 0;
       }
-      interrupts(); 
+      //interrupts(); 
 
       if (counter >= user_position_MAX) {
         inc = -1 * inc;
