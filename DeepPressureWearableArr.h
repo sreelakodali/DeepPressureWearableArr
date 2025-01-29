@@ -4,25 +4,24 @@
 #ifndef DeepPressureWearableArr_h
 #define DeepPressureWearableArr_h
 
-# define N_ACT 1
-# define T_SAMPLING 500000
+# define N_ACT 2
+# define T_SAMPLING 1000000
 
 #include "Arduino.h"
 // #else
 // #include "WProgram.h"
 // #endif
 
+// #include <MightyZap.h>
 #include "SparkFun_Displacement_Sensor_Arduino_Library.h"
-#include <MightyZap.h>
-#include <Servo.h>
-#include <Wire.h>
-#include <SD.h>
-#include <SPI.h>
-#include "IntervalTimerEx.h"
 #include "skFilter.h"
 #include "skFilter_terminate.h"
+#include <SD.h>
+#include <SPI.h>
 
-
+#include <Servo.h>
+#include <Wire.h>
+#include "IntervalTimerEx.h"
 
 // Notes: haven't added SD card stuff yet, single actuator
 
@@ -31,17 +30,17 @@ typedef enum {
 	FLEX_MAX = 180
 } FLEX_SENSOR_LIMITS;
 
-// // actuonix command limits
-// typedef enum {
-// 	POSITION_MIN = 47, // 900us mightyZap
-// 	POSITION_MAX = 139 // 2100us mightyZap
-// } ACTUATOR_LIMITS;
-
-// MightyZap actuator limits
+// actuonix command limits
 typedef enum {
-	POSITION_MIN = 0, 
-	POSITION_MAX = 4095
+	POSITION_MIN = 47, // 900us mightyZap
+	POSITION_MAX = 139 // 2100us mightyZap
 } ACTUATOR_LIMITS;
+
+// // MightyZap actuator limits
+// typedef enum {
+// 	POSITION_MIN = 0, 
+// 	POSITION_MAX = 4095
+// } ACTUATOR_LIMITS;
 
 
 // Calibration states
@@ -70,8 +69,10 @@ class DeepPressureWearableArr {
     int  buttonCount; // button count. global!
     const  int position_INArr[4] = {21, 20, 22, 23}; // analog adc pins
     volatile short forceData[N_ACT];
-    volatile int position_MeasuredArr[N_ACT];
+    volatile int position_MeasuredArrGlobal[N_ACT];
 	volatile bool writeOut;
+
+	//MightyZap* m_zap;
 
     void beginTimer();
 	void calibration();
@@ -110,10 +111,10 @@ class DeepPressureWearableArr {
 	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x0A, 0x0C};
 
 	// FIX: don't forget to change these
-	const bool actuatorType = 1; // NEW. 0 = actuonix and 1 = MightyZap. CHANGE THIS for new actuator!
+	const bool actuatorType = 0; // NEW. 0 = actuonix and 1 = MightyZap. CHANGE THIS for new actuator!
 	const int mightyZapWen_OUT = 12; // FIX THIS: temporary write enable output signal for buffer
 	Servo actuatorArr[N_ACT]; // Array version for multiple actuators
-	MightyZap* m_zap;
+	
 	
 	int WRITE_COUNT = 8;
 	int T_CYCLE = 15; // minimum delay to ensure not sampling at too high a rate for sensors
@@ -121,8 +122,6 @@ class DeepPressureWearableArr {
 
 	IntervalTimerEx ForceSampleSerialWriteTimer;
 	//IntervalTimerEx t2;
-	
-
 	
 	const  int position_OUTArr[4] = {7, 6, 8, 9}; // pwm output
 	const int  button_IN = 4;

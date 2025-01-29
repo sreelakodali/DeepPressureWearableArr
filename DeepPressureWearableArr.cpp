@@ -25,17 +25,17 @@ DeepPressureWearableArr::DeepPressureWearableArr(INPUT_TYPE input, bool serial, 
   int i;
   for (i=0; i < N_ACTUATORS; ++i) {
     position_CommandArr[i] = user_position_MIN;
-    position_MeasuredArr[i] = 0;
+    position_MeasuredArrGlobal[i] = 0;
     zeroForceArr[i] = 0;
     forceData[i] = 0;
   }
 
-  //if (!(actuatorType)) Servo actuatorArr[N_ACT];
-  if (actuatorType) {
-    MightyZap m_zapObj(&Serial4, mightyZapWen_OUT);
-	  m_zap = &m_zapObj;
-    (*m_zap).begin(32);  // Baudrate -> 128: 9600, 32: 57600, 16: 115200 
-  }
+  if (!(actuatorType)) Servo actuatorArr[N_ACT];
+  // if (actuatorType) {
+  //   MightyZap m_zapObj(&Serial4, mightyZapWen_OUT);
+	//   m_zap = &m_zapObj;
+  //   (*m_zap).begin(32);  // Baudrate -> 128: 9600, 32: 57600, 16: 115200 
+  // }
   writeOut = false;
 	cycleCount = 0; // cycleCount
 	powerOn = 0; // powerOn
@@ -57,8 +57,8 @@ static void DeepPressureWearableArr::ISR(void* obj) {
 
     for (int i=0; i < THIS->N_ACTUATORS; ++i) {
       THIS->forceData[i] = THIS->readDataFromSensor(THIS->I2C_ADDRArr[i]);
-      //THIS->position_MeasuredArr[i] = THIS->readFeedback(i);
-      //Serial.println(THIS->position_MeasuredArr[i]);
+      //THIS->position_MeasuredArrGlobal[i] = THIS->readFeedback(i);
+      //Serial.println(THIS->position_MeasuredArrGlobal[i]);
     }
     // Serial.println();
     // Serial.print(millis());
@@ -77,7 +77,7 @@ static void DeepPressureWearableArr::ISR(void* obj) {
 
 
 void DeepPressureWearableArr::beginTimer() {
-    ForceSampleSerialWriteTimer.begin(ISR, this, T_SAMPLING);
+    //ForceSampleSerialWriteTimer.begin(ISR, this, T_SAMPLING);
 }
 
 
@@ -109,18 +109,18 @@ void DeepPressureWearableArr::blink_T (int t_d) {
 }
 
 void DeepPressureWearableArr::writeActuator(int idx, int pos) {
-  if (actuatorType) (*m_zap).GoalPosition(idx+1,pos); // mightyZap
-  else actuatorArr[idx].write(pos); // actuonix
+  // if (actuatorType) (*m_zap).GoalPosition(idx+1,pos); // mightyZap
+  if (!(actuatorType)) actuatorArr[idx].write(pos); // actuonix
 }
 
 int DeepPressureWearableArr::readFeedback(int idx) {
   int value;
-  if (actuatorType) {
-    // MightyZap* device = (MightyZap*)obj;
-    //delay(50);
-    value = (*m_zap).presentPosition(idx+1); // if mightyZap
-  }
-  else {
+  // if (actuatorType) {
+  //   // MightyZap* device = (MightyZap*)obj;
+  //   //delay(50);
+  //   value = (*m_zap).presentPosition(idx+1); // if mightyZap
+  // }
+  if (!(actuatorType)) {
     value = analogRead(position_INArr[idx]); // if actuonix
   }
 
@@ -206,12 +206,13 @@ void DeepPressureWearableArr::directActuatorControl(int n) {
     short data[N_ACTUATORS];
     int position_Measured[N_ACTUATORS];
     unsigned long myTime;
+    unsigned long test;
+    unsigned long test2;
     int i;
     bool localWriteOut;
 
     myTime = millis(); // time for beginning of the loop
 
-    //position_CommandArr[0] = 900;
     // parse serial input for command value
     //if (inputType == KEYBOARD_INPUT) {
       if (Serial.available() > 0) {
@@ -231,7 +232,15 @@ void DeepPressureWearableArr::directActuatorControl(int n) {
 
     // Send command to actuator and measure actuator position
     //if (!(buttonCount % 2)) {
+      
        for (i=0; i < N_ACTUATORS; ++i) writeActuator(i, position_CommandArr[i]);
+       // test = millis();
+       // test2 = millis();
+
+       // while (int(test2-test) < 50) test2 = millis();
+
+       //for (i=0; i < N_ACTUATORS; ++i) position_Measured[i] = readFeedback(i);
+
     // } else {
     //    for (i=0; i < N_ACTUATORS; ++i) writeActuator(i, POSITION_MIN);
     // }
@@ -304,7 +313,7 @@ int DeepPressureWearableArr::sweep(int t_d, int n) {
       if (localWriteOut) {
         dataString = "";
         data = forceData[n];
-        position_Measured = position_MeasuredArr[n];
+        position_Measured = position_MeasuredArrGlobal[n];
         if (position_Measured < minValue) minValue = position_Measured;
         dataString += (String(myTime) + "," + String(counter) + "," + String(position_Measured) + "," + data);
         if (serialON) Serial.println(dataString);
