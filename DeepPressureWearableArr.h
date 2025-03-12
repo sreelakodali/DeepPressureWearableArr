@@ -122,7 +122,7 @@ class DeepPressureWearableArr {
 	
 	const  int position_OUTArr[4] = {7, 6, 8, 9}; // pwm output
 	const int  button_IN = 4;
-	const int  led_OUT = 13;
+	const int  led_OUT = 13; //5
 	
 	
 	int  cycleCount; // cycleCount
