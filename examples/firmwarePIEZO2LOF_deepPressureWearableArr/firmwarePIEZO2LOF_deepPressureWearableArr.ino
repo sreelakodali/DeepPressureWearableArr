@@ -19,13 +19,14 @@ DeepPressureWearableArr device(in, serialON, calibrateOn);
 void setup() {
     Serial.println("Device initialized.");
     device.blinkN(10, 1000);
+    device.beginTimer(); // comment out if not nterrupt based
     //delay(10000);
 }
 
 void loop() {
   // pressing button can turn feedback on and off
-  device.miniPilot_patternsCommandbyLetter();
-  //device.runtime(mapping);
+  //device.miniPilot_patternsCommandbyLetter();
+  device.runtime(mapping);
   //device.sweep(50, 0);
   //device.testLed();
 }

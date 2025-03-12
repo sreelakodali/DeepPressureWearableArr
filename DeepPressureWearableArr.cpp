@@ -30,12 +30,6 @@ DeepPressureWearableArr::DeepPressureWearableArr(INPUT_TYPE input, bool serial, 
     forceData[i] = 0;
   }
 
-  if (!(actuatorType)) Servo actuatorArr[N_ACT];
-  // if (actuatorType) {
-  //   MightyZap m_zapObj(&Serial4, mightyZapWen_OUT);
-	//   m_zap = &m_zapObj;
-  //   (*m_zap).begin(32);  // Baudrate -> 128: 9600, 32: 57600, 16: 115200 
-  // }
   writeOut = false;
 	cycleCount = 0; // cycleCount
 	powerOn = 0; // powerOn
@@ -52,33 +46,33 @@ DeepPressureWearableArr::DeepPressureWearableArr(INPUT_TYPE input, bool serial, 
 	initializeSystem(c);
 }
 
-// static void DeepPressureWearableArr::ISR(void* obj) {
-//     DeepPressureWearableArr* THIS = (DeepPressureWearableArr*)obj;
+static void DeepPressureWearableArr::ISR(void* obj) {
+    DeepPressureWearableArr* THIS = (DeepPressureWearableArr*)obj;
 
-//     for (int i=0; i < THIS->N_ACTUATORS; ++i) {
-//       THIS->forceData[i] = THIS->readDataFromSensor(THIS->I2C_ADDRArr[i]);
-//       //THIS->position_MeasuredArrGlobal[i] = THIS->readFeedback(i);
-//       //Serial.println(THIS->position_MeasuredArrGlobal[i]);
-//     }
-//     // Serial.println();
-//     // Serial.print(millis());
-//     // Serial.print(",");
-//     // Serial.print(analogRead(THIS->position_INArr[0]));
-//     // Serial.print(",");
-//     // Serial.println(THIS->forceData[0]);
-//     // myTime = millis();
-//     //data[n] = forceData[n];
-//         // position_Measured = analogRead(THIS->position_INArr[n]);        
-//         // if (position_Measured < minValue) minValue = position_Measured;    
-//     // if (serialON) Serial.println((String(millis()) + "," + String(counter) + "," + String(position_Measured) + "," + THIS->forceData[n]));
-//     THIS->writeOut = true;
-//     //Serial.println(THIS->forceData[0]);
-//   }
+    for (int i=0; i < THIS->N_ACTUATORS; ++i) {
+      THIS->forceData[i] = THIS->readDataFromSensor(THIS->I2C_ADDRArr[i]);
+      //THIS->position_MeasuredArrGlobal[i] = THIS->readFeedback(i);
+      //Serial.println(THIS->position_MeasuredArrGlobal[i]);
+    }
+    // Serial.println();
+    // Serial.print(millis());
+    // Serial.print(",");
+    // Serial.print(analogRead(THIS->position_INArr[0]));
+    // Serial.print(",");
+    // Serial.println(THIS->forceData[0]);
+    // myTime = millis();
+    //data[n] = forceData[n];
+        // position_Measured = analogRead(THIS->position_INArr[n]);        
+        // if (position_Measured < minValue) minValue = position_Measured;    
+    // if (serialON) Serial.println((String(millis()) + "," + String(counter) + "," + String(position_Measured) + "," + THIS->forceData[n]));
+    THIS->writeOut = true;
+    //Serial.println(THIS->forceData[0]);
+  }
 
 
-// void DeepPressureWearableArr::beginTimer() {
-//     //ForceSampleSerialWriteTimer.begin(ISR, this, T_SAMPLING);
-// }
+void DeepPressureWearableArr::beginTimer() {
+    ForceSampleSerialWriteTimer.begin(ISR, this, T_SAMPLING);
+}
 
 
 // Public methods
@@ -109,21 +103,11 @@ void DeepPressureWearableArr::blink_T (int t_d) {
 }
 
 void DeepPressureWearableArr::writeActuator(int idx, int pos) {
-  // if (actuatorType) (*m_zap).GoalPosition(idx+1,pos); // mightyZap
-  if (!(actuatorType)) actuatorArr[idx].write(pos); // actuonix
+  actuatorArr[idx].write(pos); // actuonix
 }
 
 int DeepPressureWearableArr::readFeedback(int idx) {
-  int value;
-  // if (actuatorType) {
-  //   // MightyZap* device = (MightyZap*)obj;
-  //   //delay(50);
-  //   value = (*m_zap).presentPosition(idx+1); // if mightyZap
-  // }
-  if (!(actuatorType)) {
-    value = analogRead(position_INArr[idx]); // if actuonix
-  }
-
+  int value = analogRead(position_INArr[idx]); // if actuonix
   return value;
 }
 
@@ -183,20 +167,19 @@ void DeepPressureWearableArr::runtime(void (*mapping)(int)) {
       //actuator1.write(POSITION_MIN);
     }
 
-    // noInterrupts();
-    // localWriteOut = writeOut;
+    noInterrupts();
+    localWriteOut = writeOut;
     // read force data and write out data at lower frequency. writeOut is activated by IntervalTimer, interrupt based
-    cycleCount = cycleCount + 1;
+    //cycleCount = cycleCount + 1;
     //if ((cycleCount == WRITE_COUNT)) {
-    if (cycleCount) {
-      for (i=0; i < N_ACTUATORS; ++i) data[i] = readDataFromSensor(I2C_ADDRArr[i]);
+    if (localWriteOut) {
+      for (i=0; i < N_ACTUATORS; ++i) data[i] = forceData[i]; //readDataFromSensor(I2C_ADDRArr[i]);
       for (i=0; i < N_ACTUATORS; ++i) position_MeasuredArr[i] = readFeedback(i);//analogRead(position_INArr[i]); // could put this in the interrupt too
       writeOutData(N_ACTUATORS, myTime, flexSensor, position_CommandArr, position_MeasuredArr, data);
-    cycleCount = 0;
-      //writeOut = false;
+    //cycleCount = 0;
+      writeOut = false;
     }
-    // interrupts(); 
-
+    interrupts(); 
     risingEdgeButton();
     if (T_CYCLE > 0) delay(T_CYCLE);    
 }
@@ -441,39 +424,39 @@ void DeepPressureWearableArr::miniPilot_patternsCommandbyLetter() {
       if (T_CYCLE > 0) delay(T_CYCLE);
 }
 
-// sweeping actuator position, increasing and decreasing. infinite loop.
-// t_d is time between actuator steps. goes through all the actuators
-void DeepPressureWearableArr::miniPilot_sweep(int t_d) {
-    unsigned long myTime;
-    short data[N_ACTUATORS];
-    int position_MeasuredArr[N_ACTUATORS];
-    int counter = user_position_MIN; // user_position_MIN + (user_position_MAX-user_position_MIN)/2
-    int i;
+// // sweeping actuator position, increasing and decreasing. infinite loop.
+// // t_d is time between actuator steps. goes through all the actuators
+// void DeepPressureWearableArr::miniPilot_sweep(int t_d) {
+//     unsigned long myTime;
+//     short data[N_ACTUATORS];
+//     int position_MeasuredArr[N_ACTUATORS];
+//     int counter = user_position_MIN; // user_position_MIN + (user_position_MAX-user_position_MIN)/2
+//     int i;
     
-    for (i=0; i < N_ACTUATORS; ++i) {
-      writeActuator(i, counter);
-      position_MeasuredArr[i] = 0;
-      data[i] = 0;
-    }
+//     for (i=0; i < N_ACTUATORS; ++i) {
+//       writeActuator(i, counter);
+//       position_MeasuredArr[i] = 0;
+//       data[i] = 0;
+//     }
   
-    for (i=0; i < N_ACTUATORS; ++i) {
+//     for (i=0; i < N_ACTUATORS; ++i) {
 
-      while (counter <= user_position_MAX) {
-        writeActuator(i, counter);
-        position_MeasuredArr[i] = readFeedback(i);//analogRead(position_INArr[i]);
-        myTime = millis();
-        data[i] = readDataFromSensor(I2C_ADDRArr[i]);
+//       while (counter <= user_position_MAX) {
+//         writeActuator(i, counter);
+//         position_MeasuredArr[i] = readFeedback(i);//analogRead(position_INArr[i]);
+//         myTime = millis();
+//         data[i] = readDataFromSensor(I2C_ADDRArr[i]);
 
-        if (serialON) {
-          //writeOutData(1, myTime, 0, counter, position_MeasuredArr[i], data[i]);
-        }
-        counter = counter + 1;
-        delay(t_d);
-      }
-      counter = user_position_MIN; // user_position_MIN + (user_position_MAX-user_position_MIN)/2
-      writeActuator(i, counter);
-    }
-}
+//         if (serialON) {
+//           //writeOutData(1, myTime, 0, counter, position_MeasuredArr[i], data[i]);
+//         }
+//         counter = counter + 1;
+//         delay(t_d);
+//       }
+//       counter = user_position_MIN; // user_position_MIN + (user_position_MAX-user_position_MIN)/2
+//       writeActuator(i, counter);
+//     }
+// }
 
 // using the servo writeMicroseconds() command intentionally
 void DeepPressureWearableArr::sweep_uS(int t_d, int n) {
@@ -506,60 +489,60 @@ void DeepPressureWearableArr::sweep_uS(int t_d, int n) {
 }
 
 
-// sweeping across a wider range of values. as increasing value, switching to different actuators
-void DeepPressureWearableArr::miniPilot_sweepKeyboard() {
-    //unsigned long myTime;
-    //int position_MeasuredArr[N_ACTUATORS];
-    //short data;
-    int x;
-    int i;
-    int counter = user_position_MIN; // user_position_MIN + (user_position_MAX-user_position_MIN)/2
-    int max = user_position_MIN + (user_position_MAX-user_position_MIN + 1)*(N_ACTUATORS-1) + (user_position_MAX-user_position_MIN);
-    int bound1[N_ACTUATORS];
-    int bound2[N_ACTUATORS];
+// // sweeping across a wider range of values. as increasing value, switching to different actuators
+// void DeepPressureWearableArr::miniPilot_sweepKeyboard() {
+//     //unsigned long myTime;
+//     //int position_MeasuredArr[N_ACTUATORS];
+//     //short data;
+//     int x;
+//     int i;
+//     int counter = user_position_MIN; // user_position_MIN + (user_position_MAX-user_position_MIN)/2
+//     int max = user_position_MIN + (user_position_MAX-user_position_MIN + 1)*(N_ACTUATORS-1) + (user_position_MAX-user_position_MIN);
+//     int bound1[N_ACTUATORS];
+//     int bound2[N_ACTUATORS];
 
-    for (i=0; i < N_ACTUATORS; ++i) {
-      writeActuator(i, counter);
-      //position_MeasuredArr[i] = 0;
-      //data[i] = 0;
-      bound1[i] = user_position_MIN + (user_position_MAX-user_position_MIN + 1)*(i);
-      bound2[i] = bound1[i] + (user_position_MAX-user_position_MIN);
-    }
+//     for (i=0; i < N_ACTUATORS; ++i) {
+//       writeActuator(i, counter);
+//       //position_MeasuredArr[i] = 0;
+//       //data[i] = 0;
+//       bound1[i] = user_position_MIN + (user_position_MAX-user_position_MIN + 1)*(i);
+//       bound2[i] = bound1[i] + (user_position_MAX-user_position_MIN);
+//     }
 
-    while (1) {
+//     while (1) {
 
-      if (Serial.available() > 0) {
-        x = (Serial.read());
-         //Serial.println(x);
+//       if (Serial.available() > 0) {
+//         x = (Serial.read());
+//          //Serial.println(x);
 
-      if ( (x < 52) or (x > 53)) {
-        Serial.println("Error: invalid input. Try again.");
-      }
+//       if ( (x < 52) or (x > 53)) {
+//         Serial.println("Error: invalid input. Try again.");
+//       }
 
-      else if (x == 52) {
-        counter = counter - 1;
-        Serial.println(counter);
-      }
-      else if (x == 53) {
-        counter = counter + 1;
-        Serial.println(counter);
-      }
+//       else if (x == 52) {
+//         counter = counter - 1;
+//         Serial.println(counter);
+//       }
+//       else if (x == 53) {
+//         counter = counter + 1;
+//         Serial.println(counter);
+//       }
 
-      if(counter < user_position_MIN) counter = user_position_MIN;
-      else if(counter > max) counter = max;
+//       if(counter < user_position_MIN) counter = user_position_MIN;
+//       else if(counter > max) counter = max;
 
-      for (i=0; i < N_ACTUATORS; ++i) {
-        if ((counter >= bound1[i]) and (counter <= bound2[i])) {
-          writeActuator(i, counter - ((user_position_MAX-user_position_MIN + 1)*(i)));
-        } else {
-          writeActuator(i, user_position_MIN);
-        }
+//       for (i=0; i < N_ACTUATORS; ++i) {
+//         if ((counter >= bound1[i]) and (counter <= bound2[i])) {
+//           writeActuator(i, counter - ((user_position_MAX-user_position_MIN + 1)*(i)));
+//         } else {
+//           writeActuator(i, user_position_MIN);
+//         }
 
-       }
+//        }
 
-      }      
-    }
-}
+//       }      
+//     }
+// }
 
 // Calibration
 void DeepPressureWearableArr::calibrationActuatorFeedback(int n) {
@@ -833,7 +816,7 @@ bool DeepPressureWearableArr::initializeActuator() {
   int i;
 
   for (i=0; i < N_ACTUATORS; ++i) {
-    if (!(actuatorType)) actuatorArr[i].attach(position_OUTArr[i]); // attach servo 
+    actuatorArr[i].attach(position_OUTArr[i]);
     writeActuator(i, POSITION_MIN);
   }
   return (true);

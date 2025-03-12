@@ -5,7 +5,7 @@
 #define DeepPressureWearableArr_h
 
 # define N_ACT 2
-# define T_SAMPLING 1000000
+# define T_SAMPLING 100000
 
 #include "Arduino.h"
 // #else
@@ -22,9 +22,7 @@
 #include <Servo.h>
 #include <Wire.h>
 #include "LSM6DS3.h"
-//#include "IntervalTimerEx.h"
-
-// Notes: haven't added SD card stuff yet, single actuator
+#include "IntervalTimerEx.h"
 
 typedef enum {
 	FLEX_MIN = 0,
@@ -75,7 +73,7 @@ class DeepPressureWearableArr {
 
 	//MightyZap* m_zap;
 
-    // void beginTimer();
+    void beginTimer();
 	void calibration();
 	void runtime(void (*mapping)(int));
 	void directActuatorControl(int n);
@@ -85,8 +83,6 @@ class DeepPressureWearableArr {
 	//void miniPilot_patternsSequence(int t_d);
 	void miniPilot_patternsCommand();
 	void miniPilot_patternsCommandbyLetter();
-	void miniPilot_sweep(int t_d);
-	void miniPilot_sweepKeyboard();
 
 	void testLed();
 	void testPushbutton();
@@ -112,8 +108,8 @@ class DeepPressureWearableArr {
 	const  byte I2C_ADDRArr[4] = {0x06, 0x08, 0x0A, 0x0C};
 
 	// FIX: don't forget to change these
-	const bool actuatorType = 0; // NEW. 0 = actuonix and 1 = MightyZap. CHANGE THIS for new actuator!
-	const int mightyZapWen_OUT = 12; // FIX THIS: temporary write enable output signal for buffer
+	// const bool actuatorType = 0; // NEW. 0 = actuonix and 1 = MightyZap. CHANGE THIS for new actuator!
+	// const int mightyZapWen_OUT = 12; // FIX THIS: temporary write enable output signal for buffer
 	Servo actuatorArr[N_ACT]; // Array version for multiple actuators
 	
 	
@@ -121,12 +117,12 @@ class DeepPressureWearableArr {
 	int T_CYCLE = 15; // minimum delay to ensure not sampling at too high a rate for sensors
 	short zeroForceArr[N_ACT]; // should this be local?
 
-	//IntervalTimerEx ForceSampleSerialWriteTimer;
-	//IntervalTimerEx t2;
+	IntervalTimerEx ForceSampleSerialWriteTimer;
+	IntervalTimerEx t2;
 	
 	const  int position_OUTArr[4] = {7, 6, 8, 9}; // pwm output
 	const int  button_IN = 4;
-	const int  led_OUT = 5;
+	const int  led_OUT = 13;
 	
 	
 	int  cycleCount; // cycleCount
@@ -150,7 +146,7 @@ class DeepPressureWearableArr {
 	bool initializeActuator();
 	bool initializeFlexSensor();
 	bool initializeIO();
-	// static void ISR(void* obj);
+	static void ISR(void* obj);
 	void writeOutData(int l, unsigned long t, float f, int *c, int *m, short *d);
 	
 
