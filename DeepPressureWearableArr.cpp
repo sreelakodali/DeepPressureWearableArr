@@ -147,7 +147,8 @@ void DeepPressureWearableArr::runtime(void (*mapping)(int)) {
       if (capacitiveFlexSensor.available() == true) flexSensor = abs(capacitiveFlexSensor.getX());
     }
     else if (inputType == KEYBOARD_INPUT) {
-      if (Serial.available() > 0) flexSensor = (Serial.read() - '0')*100 + (Serial.read() - '0')*10 + (Serial.read() - '0')*1 ;
+      if (Serial.available() > 0) flexSensor = Serial.parseFloat(); //(Serial.read() - '0')*100 + (Serial.read() - '0')*10 + (Serial.read() - '0')*1 ;
+      Serial.read(); // for enter key
     }
     mapping(int(flexSensor));
     //position1_Command = map(int(flexSensor), int(user_flex_MIN), int(user_flex_MAX), user_position_MIN, user_position_MAX);
